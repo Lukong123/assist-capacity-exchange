@@ -6,3 +6,6 @@ class Bug(models.Model):
     report_date = models.DateTimeField("report date")
     status = models.CharField(max_length=200)
     # description", "bug_type", "report_date", "status"
+
+    def __str__(self):
+        return self.bug_type
