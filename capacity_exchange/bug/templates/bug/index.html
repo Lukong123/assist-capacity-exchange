@@ -5,10 +5,16 @@
 
     </head>
     <body>
-        <p>Bugs</p>
+        <h4>List of all Bugs</h4>
+        {% for bug in latest_bug_list %}
+        <li><a href="{% url 'detail' bug.id %}"> {{ bug.description }}</a></li>
+        {% endfor %}
+
+        <button style="background-color: cadetblue; color: white; text-decoration: none; padding: 5px; margin: 20px; border-radius: 7px;"><a style="color: white; text-decoration: none;" href="{% url 'register-bug' %}">Register a Bug</a> </button>
+
     </body>
     <footer>
-        Footer
+        
     </footer>
 
 </html>

@@ -6,9 +6,9 @@ from .models import Bug
 
 
 def index(request):
-    latest_bug = Bug.objects.order_by("-report_date")[:5]
-    output = ", ".join([b.description for b in latest_bug])
-    return HttpResponse(output)
+    latest_bug_list = Bug.objects.order_by("-report_date")[:15]
+    context = {"latest_bug_list": latest_bug_list}
+    return render(request, "bug/index.html", context)
 
 
 def detail(request, bug_id):
