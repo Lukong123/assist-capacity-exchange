@@ -1,0 +1,18 @@
+<form method="post">
+    {% csrf_token %}
+    <fieldset>
+        <legend><h1>Register a Bug</h1></legend>
+        {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+        <label for="description">description</label>
+        <input type="text" name="description" required> <br>
+        <label for="bug_type">Bug Type</label>
+        <input type="text" name="bug_type" required> <br>
+        <label for="report_date">Report Date:</label>
+        <input type="datetime-local" name="report_date" required><br>
+        <label for="status">Status</label>
+        <input type="text" name="status" required><br>
+
+
+    </fieldset>
+    <input type="submit">
+    </form>
