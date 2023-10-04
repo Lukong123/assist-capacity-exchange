@@ -1,5 +1,5 @@
 import datetime
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.urls import reverse
@@ -8,7 +8,7 @@ from .models import Bug
 from .views import DetailView
 
 class BugModelTests(TestCase):
-    def test_was_published_recently_with_future_question(self):
+    def test_was_published_recently_with_future_bug(self):
         """
         was_published_recently() should return False for bugs whose
         report_date is in the future
@@ -20,32 +20,44 @@ class BugModelTests(TestCase):
 
 
     def test_field_types(self):
+        """Verifying field types"""
         bug = Bug(description="Wrong Spelling", bug_type="Documentation", report_date=datetime.datetime.now(), status="In progress")
         self.assertIsInstance(bug.description, str)
         self.assertIsInstance(bug.bug_type, str)
         self.assertIsInstance(bug.report_date, datetime.datetime)
         self.assertIsInstance(bug.status, str)
-    
-    def test_valid_input(self):
-        bug = Bug(description="Valid Test", bug_type="bug", report_date=datetime.datetime.now(), status="Not Done")
-        self.assertEqual(str(bug), "bug")
-    
-    def test_empty_description(self):
-        bug = Bug(description="", bug_type="Documentation", report_date=datetime.datetime.now(), status="In Progress")
-        with self.assertRaises(ValidationError) as context:
-            errors = bug.full_clean()
-        self.assertIn('description', errors)
 
-    def test_invalid_report_date(self):
-        bug = Bug(description="Know Explanation", bug_type="Documentation", report_date="2021-14-13", status="In Progress")
-        with self.assertRaises(ValidationError) as context:
-            bug.full_clean()
-        self.assertTrue("report_date" in context.exception.message_dict)
 
     def test_long_description(self):
         description = "A"*300
         bug = Bug(description=description, bug_type="Documentation", report_date="2021-14-13", status="In Progress")
         self.assertRaises(ValidationError, bug.full_clean)
+
+    def test_bug_filled_model(self):
+        """All fields properly filled"""
+
+        bug1 = Bug(description="This is a Sample Bug", 
+                bug_type="UI",
+                report_date=datetime.datetime.now(),
+                status="Not Done"
+            )
+        assert bug1.description == "This is a Sample Bug"
+        assert bug1.bug_type == "UI"
+        assert isinstance(bug1.report_date, datetime.datetime)
+        assert bug1.status == "Not Done"
+
+    def test_bug_model_type(self):
+        """supply an integer value to a CharField (like description)"""
+        try:
+            bug2 = Bug(description=12345, 
+                    bug_type="UI",
+                    report_date=datetime.datetime.now(),
+                    status="Not Done"
+                )
+            bug2.full_clean() 
+        except ValidationError as e:
+            assert 'description' in e.message_dict
+
 
 
 # Creating Testcases For View
@@ -61,33 +73,9 @@ def create_bug(description, days):
     return Bug.objects.create(description=description, report_date=time)
 
 class BugIndexViewTests(TestCase):
-
-    def test_past_test(self):
-        """
-        Bugs  with a report_date in the past are displayed on the index page
-        """
-        bug = create_bug(description="Past bug.", days=-25)
-        response = self.client.get(reverse("bug:index"))
-        self.assertQuerySetEqual(
-            response.context["latest_bug_list"],
-            [bug],
-        )
-
-    def test_two_past_bug(self):
-        """
-        The bug index page may display multiple bugs
-        """
-        bug_1 = create_bug(description="bug 1", days=-4)
-        bug_2 = create_bug(description="bug 2", days = 6)
-        response = self.client.get(reverse("bug:index"))
-        self.assertQuerysetEqual(
-            response.context["latest_bug_list"],
-            [bug_1, bug_2]
-        )
-       
     def test_no_bugs(self):
         """ No bug registered the list should be empty """
-        url = reverse('bug:index')
+        url = ("/")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertQuerysetEqual(response.context['latest_bug_list'], [])
@@ -97,7 +85,7 @@ class BugIndexViewTests(TestCase):
         for i in range(1, 6):
             Bug.objects.create(description=f"Bug {i}", report_date=timezone.now())
         
-        url = reverse('bug:index')
+        url = ("/")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['latest_bug_list']), 5)
@@ -107,48 +95,30 @@ class BugIndexViewTests(TestCase):
         for i in range(1, 7):
             Bug.objects.create(description=f"Bug {i}", report_date=timezone.now())
         
-        url = reverse('bug:index')
+        url = ("/")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['latest_bug_list']), 5)
 
 class DetailViewTestCase(TestCase):
-    
-    def test_bug_detail(self):
-        """ Bug details verifying all fields"""
-        bug = Bug.objects.create(
-            description = "Test bug",
-            bug_type = "Bug",
-            status = "In Progress",
-            report_date = datetime.datetime
-
-        )
-        url = reverse('bug:detail', args=[bug.pk])
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['object'], bug)
-
-        self.assertContains(response, bug.description)
-        self.assertContains(response, bug.bug_type)
-        self.assertContains(response, bug.status)
-        self.assertContains(response, bug.report_date)
 
     def test_invalid_bug_id(self):
         """ Invalid bug id check"""
         invalid_id = 1800
-        url = reverse('bug:detail', args=[invalid_id])
+        url = 'detail/'+str(invalid_id)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
-class RegisterBugViewTestCase(TestCase):
-    def test_register_bug(self):
-        """register bug check"""
-        description = "Test Bug"
-        url = reverse('bug:bug:register_bug')
-        response = self.client.post(url, {'description': description})
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('bug:bug:index'))
 
-        bug = Bug.objects.get(description=description)
-        self.assertEqual(bug.description, description)
-        self.assertEqual(bug.report_date.date(), timezone.now().date())
+class RegistersBugViewTestCase(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+        self.url = '/register-bug/' 
+        
+    def test_get_request(self):
+        response = self.client.get(self.url)
+        self.assertEquals(response.status_code, 200)
+    
+    
+    

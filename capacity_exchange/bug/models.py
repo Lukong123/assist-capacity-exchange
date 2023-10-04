@@ -2,6 +2,7 @@ import datetime
 
 from django.db import models
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 
 class Bug(models.Model):
@@ -17,3 +18,7 @@ class Bug(models.Model):
     def was_published_recently(self):
         now = timezone.now()
         return now - datetime.timedelta(days=1) <= self.report_date <= now
+
+    # def save(self, *args, **kwargs):
+    #     self.full_clean()  
+    #     super().save(*args, **kwargs)
