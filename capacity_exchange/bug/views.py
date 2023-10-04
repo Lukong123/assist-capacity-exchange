@@ -13,7 +13,7 @@ class IndexView(generic.ListView):
 
     def get_queryset(self):
         """Return the last five published bug."""
-        return Bug.objects.order_by("-report_date")[:15]
+        return Bug.objects.order_by("-report_date")[:5]
 
 
 
