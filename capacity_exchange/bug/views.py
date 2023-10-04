@@ -2,6 +2,8 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.views import generic
+from django.utils import timezone
+
 
 from .models import Bug
 
@@ -13,8 +15,9 @@ class IndexView(generic.ListView):
 
     def get_queryset(self):
         """Return the last five published bug."""
-        return Bug.objects.order_by("-report_date")[:5]
-
+        return Bug.objects.filter(report_date__lte=timezone.now()).order_by("-report_date")[
+        :5
+    ]
 
 
 class DetailView(generic.DetailView):
